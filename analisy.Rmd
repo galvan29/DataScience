@@ -1,0 +1,455 @@
+---
+title: "Economic Analisys of Football"
+author: "Galvan Matteo - 142985"
+output:
+  ioslides_presentation:
+    css: style.css
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache = TRUE, message = FALSE, warning = FALSE)
+
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+```
+
+
+# Introduzione
+
+```{r,message=FALSE,warning=FALSE,echo=FALSE}
+europa0719 =read.csv("europa0719.csv")
+champions1720=read.csv("champions1720.csv")
+championsitalia1719 <- read.csv("championsita1720.csv")
+```
+
+
+## Introduzione
+<!-- <div style="text-align:center"><img width = "240" height = "160" src ="immagine.jpg"/></div> -->
+<!-- <br> -->
+Lo sport del calcio è uno delle competizioni più seguite al mondo. Oltre agli aspetti più conosciuti ne esistono di molto interessanti da analizzare. Questi sono alla base della macchina economica che è il calcio. <br>
+Come vedremo in seguito la sola Premier League nella stagione 2017-2018 ha investito più di 2 milardi di euro.
+Queste cifre astronomiche si devono  all'acquisto e alla vendita di giocatori da parte dei club.
+
+Il mio elaborato ha lo scopo di studiare la correlazione che insiste tra le cifre investite dai club e i risultati in Champions League, per quanto riguarda i 5 maggiori campionati europei.
+Verranno poi analizzati in dettaglio i traferimenti di giocatori nei club della Serie A TIM, facendo poi uno zoom più dettagliato sui trasferimenti della Juventus FC.
+
+# Analisi economica: <br> i 5 maggiori campionati europei
+
+## Investimenti in Europa - dal 2007 al 2020
+
+Come sta variando il mercato nei campionati europei?
+
+```{r,message=FALSE,warning=FALSE,echo=FALSE}
+#conversione da sterlina a euro
+europa0719 <- europa0719 %>% mutate(fee_cleaned=fee_cleaned*1.11)          
+
+#entrate e uscite di tutti i 5 maggiori campionati delle ultime 13 stagioni
+conto0719 <- inner_join(europa0719 %>%
+  group_by(league_name, year) %>%
+  filter(!is.na(fee_cleaned), transfer_movement=="out") %>%
+  summarise(Entrate = sum(fee_cleaned)), 
+  europa0719 %>%
+  group_by(league_name, year) %>%
+  filter(!is.na(fee_cleaned), transfer_movement=="in") %>%
+  summarise(Uscite = sum(fee_cleaned)))
+
+ggplot(conto0719, aes(x = year)) +
+  geom_point(aes(y=Entrate)) +
+  geom_line(aes(y = Entrate), colour="green", size=0.5) +
+  geom_point(aes(y=Uscite)) +
+  geom_line(aes(y = Uscite), colour="red", size=0.5) +
+  facet_wrap(~league_name) +
+  labs(title = "Income and Expenses of the last 13 Seasons divided by League", x="Year", y="Millions of euros") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 15, face = "bold")) +
+  scale_x_continuous(breaks = c(2007, 2011, 2015, 2019))
+```
+
+Il grafico rappresenta le entrate e le uscite in milioni di euro, dalla stagione 2007-2008 alla stagione 2019-2020. Sono comprese la sessione invernale ed estiva. <br>
+Osservando i grafici è immediato notare come negli ultimi anni gli investimenti sono divenuti molto importanti. Ci sono campionati in cui le cifre investite sono molto alte, come la Premier League, mentre alri in cui seppur in crescita, sono moderate.
+
+
+## Premessa
+
+Per riuscire a esprimere graficamente i risultati conseguiti in Champions League delle squadre europee, è stato assegnato ad ogni squadra un punteggio da 1 a 6 che rappresenta la fase in cui la squadra è uscita dal torneo.
+
+I punteggi sono così divisi:
+
+1 punto: gironi   <br>
+2 punti: ottavi di finale <br>
+3 punti: quarti di finale <br>
+4 punti: semi-finale <br>
+5 punti: finale persa <br>
+6 punti: finale vinta <br>
+
+
+## Mercato in entrata e in uscita dal 2014 al 2020
+
+I risultati sono una conseguenza degli investimenti?
+
+Per rispondere a questa domanda ho analizzato il mercato in entrata e in uscita e i risultati in Champions leaugue dei 5 maggiori campionati europei.
+
+```{r,message=FALSE,warning=FALSE,echo=FALSE}
+#grafico degli investimenti negli ultimi 6 anni dei 5 maggiori campionati
+ggplot(conto0719, aes(x = year)) +
+  geom_point(aes(y=Entrate)) +
+  geom_line(aes(y = Entrate), colour="green", size=0.5) +
+  geom_point(aes(y=Uscite)) +
+  geom_line(aes(y = Uscite), colour="red", size=0.5) +
+  facet_wrap(~league_name) +
+  labs(title = "Income and Expenses of the last 6 Seasons divided by League", x="Year", y="Millions of euros") +
+  theme_bw() +
+  xlim(2014, 2019) +
+  theme(plot.title = element_text(size = 15, face = "bold"), axis.text.x = element_text(angle = 30, vjust = 0.5, hjust=0.5))
+```
+
+```{r,message=FALSE,warning=FALSE,echo=FALSE}
+#grafico degli ultimi 3 anni in Champions con punteggio calcolato in base alla posizione in classifica
+champions1720 <- champions1720 %>% mutate(Year=as.Date(ISOdate(Year, 06, 06)))
+ggplot(champions1720, aes(x = Year, y=Punteggio2, group = 1)) +
+  geom_point() +
+  geom_line(size=0.5) +
+  labs(title = "Scores divided by the number of teams from that League in the Champions League for the last 3 seasons", x="Year", y="Score") +
+  theme_bw() +
+  facet_wrap(~League) +
+  theme(plot.title = element_text(size = 9, face = "bold"), axis.text.x = element_text(angle = 30, vjust = 0.5, hjust=0.5)) +
+  scale_y_discrete(limits = c("Group Stage", "Round of 16", "Quarter-Finals", "Semi-finals", "Lost Final ", "Final Won"))
+```
+
+Il primo grafico contiene nello specifico le entrate e le uscite delle ultime 6 stagioni. <br>
+Il secondo grafico è costruito sulla media delle squadre presenti in Champions divise per campionato.
+
+Possiamo notare che le squadre all'interno dei singoli campionati che continuano ad investire  ottengono risultati molto incoraggianti. Se, come nella Premier, diminuiamo l'investimento i risultati peggiorano.
+
+Per comprendere meglio l'impatto degli investimenti sia in Champions League che sul campionato, nelle prossime slide analizzeremo la Juventus FC.
+
+
+# Analisi - Serie A
+
+## Investimenti in italia - dal 2007 al 2020
+
+Quali sono le squadre che investono di più nel nostro campionato?
+
+
+```{r,message=FALSE,warning=FALSE,echo=FALSE}
+#grafico delle entrate e uscite in Serie A delle ultime 13 stagioni
+ggplot(conto0719 %>% filter(league_name=="Serie A"), aes(x = year)) +
+  geom_point(aes(y=Entrate)) +
+  geom_line(aes(y = Entrate), colour="green") +
+  geom_point(aes(y=Uscite)) +
+  geom_line(aes(y = Uscite), colour="red") +
+  facet_wrap(~league_name) +
+  labs(title = "Economic summary of all the teams of the last 13 seasons in Serie A", x="Year", y="Millions of euros") +    
+  theme_bw() +
+  theme(plot.title = element_text(size = 15, face = "bold")) +
+    scale_x_continuous(breaks = c(2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014,2015,2016, 2017, 2018, 2019))
+```
+
+```{r,message=FALSE,warning=FALSE,echo=FALSE}
+contoita <- inner_join(europa0719 %>%
+  group_by(club_name, year) %>%
+  filter(!is.na(fee_cleaned), transfer_movement=="out") %>%
+  summarise(Entrate = sum(fee_cleaned)), 
+  europa0719 %>%
+  group_by(club_name, year) %>%
+  filter(!is.na(fee_cleaned), transfer_movement=="in") %>%
+  summarise(Uscite = sum(fee_cleaned))) %>% 
+  select(club_name, Entrate, Uscite, year) %>% filter(club_name=="Juventus" | club_name=="Napoli" | club_name=="Milan" | club_name=="Atalanta" | club_name=="Lazio" | club_name=="Inter" | club_name=="Roma")
+
+ggplot(contoita, aes(x = year)) +
+  geom_point(aes(y=Entrate)) +
+  geom_line(aes(y = Entrate), colour="green", size=0.5) +
+  geom_point(aes(y=Uscite)) +
+  geom_line(aes(y = Uscite), colour="red", size=0.5) +
+  facet_wrap(~club_name) +
+  labs(title = "Economic summary of the 7 major Serie A teams of the last 13 seasons", x="Year", y="Millions of euros") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 15, face = "bold")) +
+  scale_x_continuous(breaks = c(2007, 2011, 2015, 2019))
+```
+
+Possiamo notare che i club che investono di più sono sostanzialmente le squadre che restano ad alti livelli e che negli ultimi 13 anni sono rimaste sempre in Serie A TIM. 
+Queste squadre sono le più propense a investire e vendere giocatori con un costo più alto, perchè hanno introiti maggiori e possono permettersi, a differenza delle neopromosse, di intervenire sul mercato ogni anno in maniera importante.
+
+
+# Statistiche su acquisti e cessioni - Serie A
+
+
+## Età media dei giocatori acquistati e venduti -  2019-2020
+
+Quale è l'età media dei giocatori che vengono comprati e venduti all'interno del nostro campionato? <br><br>
+Tutte le squadre del 2019-2020 considerando la sessione estiva e quella invernale intervengono sul mercato.
+
+
+```{r,message=FALSE,warning=FALSE,echo=FALSE}
+
+etavenduti <- ggplot(europa0719 %>% filter(league_name=="Serie A")  %>% filter(year=="2019", transfer_movement=="out") %>% group_by(position)) +
+  geom_boxplot(aes(x = position, y = age, colour = factor(position))) +          #size e legenda da mettere a posto
+  labs(title = "Average age of Sold players ",  x = "Position", y = "Average age") +
+  theme_bw() +
+  theme(legend.position = "none", plot.title = element_text(size = 15, face = "bold"), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=0.5)) +
+  scale_x_discrete(limits = c("Goalkeeper", "Defender", "Midfielder", "Left Winger", "Right Winger", "Forward"))
+
+etaacquist <- ggplot(europa0719 %>% filter(league_name=="Serie A")  %>% filter(year=="2019", transfer_movement=="in") %>% group_by(position)) +
+  geom_boxplot(aes(x = position, y = age, colour = factor(position))) +          #size e legenda da mettere a posto
+  labs(title = "Average age of Purchased players", x = "Position") +
+  theme_bw() +
+  theme(legend.position = "none", axis.title.y = element_blank(), plot.title = element_text(size = 15, face = "bold"), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=0.5)) +
+  scale_x_discrete(limits = c("Goalkeeper", "Defender", "Midfielder", "Left Winger", "Right Winger", "Forward")) +
+  scale_y_continuous(breaks = c(17, 20, 25, 30, 35, 40))
+
+# etavenduti
+# etaacquist
+ggarrange(etavenduti, etaacquist)
+
+```
+
+Fin da subito è possibile osservare che l'esperienza in alcuni ruoli è molto ricercata.
+Infatti per quanto riguarda i ruoli di portiere, centrocampo e attacco questa è una caratteristica molto richiesta.
+Per quanto riguarda invece le fascie sinistra e destra, si cercano giocatori più giovani che aggiungano velocità e qualità alla squadra. <br>
+In sostanza comunque non si hanno gradi differenze d'età tra i giocatori acquistati e i giocatori venduti.
+
+
+## Prezzo medio di vendita e acquisto di giocatori nella stagione 2019-2020
+
+Come varia il prezzo degli acquisti e delle cessioni?
+
+Per dare una risposta ho analizzato solamente le 7 squadre che investono di più: Atalanta, Inter, Juventus, Lazio, Milan, Napoli, Roma.
+
+```{r,message=FALSE,warning=FALSE,echo=FALSE}
+
+prezzovend <- europa0719 %>% filter(league_name=="Serie A", !is.na(fee_cleaned), fee_cleaned>0, year=="2019", transfer_movement=="out", club_name=="Juventus" | club_name=="Milan" | club_name=="Roma" | club_name=="Lazio" | club_name=="Inter" | club_name=="Atalanta" | club_name=="Napoli") %>% group_by(position) %>%  mutate(prezzomU=fee_cleaned)
+
+prezzoacqu <- europa0719 %>% filter(league_name=="Serie A", !is.na(fee_cleaned), fee_cleaned>0, year=="2019", transfer_movement=="in", club_name=="Juventus" | club_name=="Milan" | club_name=="Roma" | club_name=="Lazio" | club_name=="Inter" | club_name=="Atalanta" | club_name=="Napoli") %>% group_by(position) %>%  mutate(prezzomE=fee_cleaned)
+
+prezzo <- full_join(prezzovend, prezzoacqu)
+
+prezzovend <- ggplot(prezzo) +
+  geom_boxplot(aes(x = position, y = prezzomU, colour = factor(position))) +          #size e legenda da mettere a posto
+  labs(title = "Average player Sold Price",  x = "Position", y = "Average Price (M)") +
+  theme_bw() +
+  theme(legend.position = "none", plot.title = element_text(size = 15, face = "bold"), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=0.5)) +
+  scale_x_discrete(limits = c("Goalkeeper", "Defender", "Midfielder", "Left Winger", "Right Winger", "Forward")) +
+  scale_y_continuous(breaks = c(0, 10, 20, 30, 40, 50, 60))
+
+prezzoacqu <- ggplot(prezzo) +
+  geom_boxplot(aes(x = position, y = prezzomE, colour = factor(position))) +          #size e legenda da mettere a posto
+  labs(title = "Average player Purchase Price",  x = "Position") +
+  theme_bw() +
+  theme(legend.position = "none", axis.title.y = element_blank(), plot.title = element_text(size = 15, face = "bold"), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=0.5)) +
+  scale_x_discrete(limits = c("Goalkeeper", "Defender", "Midfielder", "Left Winger", "Right Winger", "Forward")) +
+  scale_y_continuous(breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 80))
+
+# prezzovend
+# prezzoacqu
+ggarrange(prezzovend, prezzoacqu)
+```
+
+Così come per l'età anche il prezzo a cui vengono venduti e acquistati i giocatori è vario. Se pensiamo all'acquisto di De Ligt da parte della Juventus, si nota subito che il prezzo a cui è stato pagato è di molto superiore alla media. <br>
+Il prezzo di acquisto è sempre maggiore del prezzo di vendita, perchè le squadre che puntano ad ottenere risultati investono su giocatori giovani ma forti o comunque su giocatori che abbiano molta esperienza anche in campo internazionale.
+
+
+
+## I numeri della vendita e dell'acquisto di giocatori 
+Quali sono i ruoli più cercati e più venduti?     <br>         
+Questi grafici rappresentano il numero di giocatori venduti e acquistati nella stagione 2019-2020 dalle 7 maggiori squadre.
+
+```{r,message=FALSE,warning=FALSE,echo=FALSE}
+
+ita7squadreout <- europa0719 %>% filter(league_name=="Serie A")  %>% filter(year=="2019", transfer_movement=="out", club_name=="Juventus" | club_name=="Milan" |
+                                                                               club_name=="Roma" | club_name=="Lazio" | club_name=="Inter" |
+                                                                               club_name=="Atalanta" | club_name=="Napoli") %>% group_by(club_name, position) %>% summarise(NumeroU=n())
+ita7squadrein <- europa0719 %>% filter(league_name=="Serie A")  %>% filter(year=="2019", transfer_movement=="in", club_name=="Juventus" | club_name=="Milan" |
+                                                                               club_name=="Roma" | club_name=="Lazio" | club_name=="Inter" |
+                                                                               club_name=="Atalanta" | club_name=="Napoli") %>% group_by(club_name, position) %>% summarise(NumeroE=n())
+ita7squadrenum <- full_join(ita7squadrein, ita7squadreout)
+
+giovend <- ggplot(ita7squadrenum) +
+  geom_violin(aes(x = position, y = NumeroU, fill=position)) +                 #giocatori venduti, in uscita
+  labs(title = "Roles Sold in Italy of the 7 best teams 2019-2020", x = "Position", y = "Number of Sold players") +
+  theme_bw() +
+  theme(legend.position = "none",
+        plot.title = element_text(size = 15, face = "bold")) +
+  scale_y_continuous(breaks = c(0, 5, 10, 15, 20, 25, 30)) +
+  scale_x_discrete(limits = c("Goalkeeper", "Defender", "Midfielder", "Left Winger", "Right Winger", "Forward"))
+
+
+gioacqu <- ggplot(ita7squadrenum) +
+  geom_violin(aes(x = position, y = NumeroE, fill=position)) +                 #giocatori acquistati, in uscita
+  labs(title = "Roles Purchased in Italy of the 7 best teams 2019-2020", x = "Position", y = "Numbers of Purchased players") +
+  theme_bw() +
+  theme(legend.position = "none",
+        plot.title = element_text(size = 15, face = "bold")) +
+  scale_y_continuous(breaks = c(0, 2, 4, 6, 8, 10, 12, 15)) +
+  scale_x_discrete(limits = c("Goalkeeper", "Defender", "Midfielder", "Left Winger", "Right Winger", "Forward"))
+
+giovend
+gioacqu
+
+# ggarrange(gioacqu, giovend)
+```
+
+Come sappiamo esistono gli uomini spogliatoio o comunque quei giocatori fedeli alla maglia. Se nessun giocatore in quel ruolo lascia la squadra allora non sarà necessario sostituirlo. Dai grafici vediamo quindi che i ruoli dove si cambiano meno giocatori sono quelli del portiere e delle ali. Il centrocampo, che ha un'età di vendita e acquisto molto alta rispetto agli altri ruoli, vede cambiare molti giocatori.
+
+
+# Juventus FC
+
+## Rendimento della Juventus FC dalla stagione 2012-2013 alla stagione 2019-2020
+
+Per analizzare meglio la Serie A è stata selezionata una sola società: la Juventus FC. <br>
+È l'unica squadra italiana ad essere in Champions League da vari anni.
+
+```{r,message=FALSE,warning=FALSE,echo=FALSE}
+contojuve <- inner_join(europa0719 %>%
+  group_by(club_name, year) %>%
+  filter(!is.na(fee_cleaned), transfer_movement=="out") %>%
+  summarise(Entrate = sum(fee_cleaned)), 
+  europa0719 %>%
+  group_by(club_name, year) %>%
+  filter(!is.na(fee_cleaned), transfer_movement=="in") %>%
+  summarise(Uscite = sum(fee_cleaned)))
+
+ggplot(tail(contojuve %>% filter(club_name=="Juventus"), 8), aes(x = year)) +
+  geom_point(aes(y=Entrate)) +
+  geom_line(aes(y = Entrate), colour="green", size=0.5) +
+  geom_point(aes(y=Uscite)) +
+  geom_line(aes(y = Uscite), colour="red", size=0.5) +
+  facet_wrap(~club_name) +
+  labs(title = "Income and Expenses of the last 8 Juventus seasons", x="Year", y="(Millions of euros)") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 15, face = "bold")) +
+  scale_x_continuous(breaks = c(2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019)) +
+  scale_y_continuous(breaks = c(50, 100, 150, 200, 250))
+```
+
+
+```{r,message=FALSE,warning=FALSE,echo=FALSE}
+
+ggplot(championsitalia1719, aes(x = Year, y=Punteggio, group = 1)) +
+  geom_point() +
+  geom_line(size=0.5) +
+  facet_wrap(~Team) +
+  labs(title = "Results of the last 8 seasons of Juve in the Champions League", x="Year", y="Score") +
+  theme_bw() +
+  theme(plot.title = element_text(size = 15, face = "bold")) +
+  scale_y_discrete(limits = c("Group Stage", "Round of 16", "Quarter-Finals", "Semi-finals", "Lost Final ", "Final Won"))
+```
+
+
+Il primo grafico è un ingrandimento dalla stagione 2012-2013 alla stagione 2019-2020 in cui sono mostrate le entrate e le uscite del mercato in milioni di euro.<br> 
+Il secondo grafico mostra l'andamento in Champions League con i punteggi calcolati in base alla posizione in cui la squadra è arrrivata. <br>
+La posizione della Juventus in campionato negli ultimi anni è sempre la prima: dal grafico possiamo notare che per ottenere risultati con continuità è importante continuare ad investire molto. 
+
+# Statistiche su acquisti e cessioni - Juventus FC
+
+## Numeri del mercato in entrata e uscita
+
+Bisogna quindi investire sulla quantità o sulla qualità dei giocatori?
+
+Per avere le idee più chiare ho analizzato il numero di giocatori che sono stati venduti e acquistati negli ultimi 4 anni dalla Juventus.
+
+```{r,message=FALSE,warning=FALSE,echo=FALSE}
+
+outgiojuve4anni <- europa0719 %>% filter(league_name=="Serie A")  %>% filter(year=="2016" | year=="2017" | year=="2018" | year=="2019", transfer_movement=="out", club_name=="Juventus") %>% group_by(position, year) %>% summarise(NumeroU=n())
+ingiojuve4anni <-  europa0719 %>% filter(league_name=="Serie A")  %>% filter(year=="2016" | year=="2017" | year=="2018" | year=="2019", transfer_movement=="in", club_name=="Juventus") %>% group_by(position, year) %>% summarise(NumeroE=n())
+
+giocatoriinout <- full_join(outgiojuve4anni, ingiojuve4anni)
+
+ggplot(giocatoriinout) +            #size e legenda da mettere a posto
+  geom_point(aes(x = position, y = NumeroU , colour = factor(year), size=0.05)) +          
+  labs(title = "Roles Sold by Juventus in the last 4 Seasons", x = "Position", y = "Numbers of Sold players") +
+  theme_bw() +
+  theme(legend.title = element_blank(), plot.title = element_text(size = 15, face = "bold"), legend.text = element_text(color = "black", size = 10)) +
+  scale_x_discrete(limits = c("Goalkeeper", "Defender", "Midfielder", "Left Winger", "Right Winger", "Forward")) +
+  guides(size = FALSE)
+
+ggplot(giocatoriinout) +
+  geom_point(aes(x = position, y = NumeroE, colour = factor(year), size=0.05)) +          #size e legenda da mettere a posto
+  labs(title = "Roles Purchased by Juventus in the last 4 Seasons", x = "Position", y = "Numbers of Purchased players") +
+  theme_bw() +
+  theme(legend.title = element_blank(),  plot.title = element_text(size = 15, face = "bold"), legend.text = element_text(color = "black", size = 10)) +
+  scale_x_discrete(limits = c("Goalkeeper", "Defender", "Midfielder", "Left Winger", "Right Winger", "Forward")) +
+  guides(size = FALSE)
+```
+
+Come si apprende dal grafico, in realtà se la posizione in classifica rimane costante il numero di giocatori che vengono venduti e acquistati diminuisce drasticamente. <br>
+Nella stagione 2016-2017 i giocatori cambiati erano 6 volte quelli cambiati nel 2019-2020. <br>
+Tuttavia gli investimenti continuano a salire: da questo dato possiamo dedurre che il prezzo di ogni singolo giocatore aumenti e che quindi la società cerchi di selezionare giocatori di grande valore.
+
+## Età media dei giocatori acquistati e venduti
+
+Vediamo ora l'età media a cui sono stati acquistati e venduti i giocatori nella Juventus nelle ultime 3 stagioni.
+
+```{r,message=FALSE,warning=FALSE,echo=FALSE}
+
+etavenduti <- ggplot(europa0719 %>% filter(league_name=="Serie A")  %>% filter(year=="2019" | year=="2018" | year=="2017", transfer_movement=="out") %>% group_by(position)) +
+  geom_boxplot(aes(x = position, y = age, colour = factor(position))) +          
+  labs(title = "Average age of Sold players",  x = "Position", y = "Average age") +
+  theme_bw() +
+  theme(legend.position = "none", axis.title.y = element_blank(), plot.title = element_text(size = 15, face = "bold"), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=0.5)) +
+  scale_x_discrete(limits = c("Goalkeeper", "Defender", "Midfielder", "Left Winger", "Right Winger", "Forward"))
+
+etaacquist <- ggplot(europa0719 %>% filter(league_name=="Serie A")  %>% filter(year=="2019" | year=="2018" | year=="2017", transfer_movement=="in") %>% group_by(position)) +
+  geom_boxplot(aes(x = position, y = age, colour = factor(position))) +          
+  labs(title = "Average age of Purchased players",  x = "Position") +
+  theme_bw() +
+  theme(legend.position = "none", axis.title.y = element_blank(), plot.title = element_text(size = 15, face = "bold"), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=0.5)) +
+  scale_x_discrete(limits = c("Goalkeeper", "Defender", "Midfielder", "Left Winger", "Right Winger", "Forward"))
+
+# etavenduti
+# etaacquist
+ggarrange(etavenduti, etaacquist)
+
+```
+
+Osservando i grafici notiamo che una squadra internazionale come questa, anche se punta sui giovani, preferisce comunque prendere giocatori con vari anni di attività e che quindi hanno un'età più avanzata. <br>
+La media è bassa, sui 22 anni, ma i valori fuori scala sono molti e denotano l'acquisto di giocatori con molti anni di esperienza (Buffon, Ronaldo).
+
+
+## Prezzo medio di vendita e acquisto di giocatori
+
+Per restare con costanza in prima posizione nel nostro campionato quanto è necessario investire? 
+
+
+```{r,message=FALSE,warning=FALSE,echo=FALSE}
+
+prezzovenduti <- europa0719 %>% filter(league_name=="Serie A", year=="2019" | year=="2018" | year=="2017", club_name=="Juventus", transfer_movement=="out", !is.na(fee_cleaned), fee_cleaned>0) %>% group_by(position) %>% mutate(pmedioU=fee_cleaned)
+  
+prezzoacquist <- europa0719 %>% filter(league_name=="Serie A", year=="2019" | year=="2018" | year=="2017", club_name=="Juventus", transfer_movement=="in", !is.na(fee_cleaned), fee_cleaned>0) %>% group_by(position) %>% mutate(pmedioE=fee_cleaned)
+
+prezzo <- full_join(prezzovenduti, prezzoacquist)
+
+prezzovenduti <- ggplot(prezzo) +
+  geom_boxplot(aes(x = position, y = pmedioU, colour = factor(position))) +          #size e legenda da mettere a posto
+  labs(title = "Average player Sold Price",  x = "Position", y = "Average Price") +
+  theme_bw() +
+  theme(legend.position = "none", axis.title.y = element_blank(), plot.title = element_text(size = 15, face = "bold"), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=0.5)) +
+  scale_x_discrete(limits = c("Goalkeeper", "Defender", "Midfielder", "Left Winger", "Right Winger", "Forward")) +
+  scale_y_continuous(breaks = c(0, 10, 20, 30, 40, 50, 60, 70))
+
+
+prezzoacquist <- ggplot(prezzo) +
+  geom_boxplot(aes(x = position, y = pmedioE, colour = factor(position))) +          #size e legenda da mettere a posto
+  labs(title = "Average player Purchased Price",  x = "Position") +
+  theme_bw() +
+  theme(legend.position = "none", axis.title.y = element_blank(), plot.title = element_text(size = 15, face = "bold"), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=0.5)) +
+  scale_x_discrete(limits = c("Goalkeeper", "Defender", "Midfielder", "Left Winger", "Right Winger", "Forward")) +
+  scale_y_continuous(breaks = c(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120))
+
+
+# prezzovenduti
+# prezzoacquist
+ggarrange(prezzovenduti, prezzoacquist)
+
+```
+
+Dai grafici i trasferimenti degli ultimi 3 anni, i prezzi medi sono relativamente bassi, poichè comprendono anche i traferimenti in primavera. <br>
+Si può notare come, in linea di massima, il prezzo dei giocatori acquistati è molto più alto di quello dei giocatori venduti.
+
+## Sitografia
+
+I siti che ho utilizzato per trovare i file sono: <br>
+1. github.com/ewenme/transfers <br>
+2. fixturedownload.com
